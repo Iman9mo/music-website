@@ -8,6 +8,17 @@ from .serializers import UserSerializer, RegisterSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import Sum
+from .permissions import IsOwnerOrReadOnly
+from django.core.exceptions import PermissionDenied
+
+
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    Custom permission to only allow owners of an object to edit it.
+    """
+    def has_object_permission(self, request, view, obj):
+        return obj.user == request.user
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -57,9 +68,35 @@ class SongViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        
+        
+    @action(detail=True, methods=['get'], url_path='profile', url_name='song-profile')
+    def get_song_profile(self, request, pk=None):
+        song = self.get_object()
+        serializer = self.get_serializer(song)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='history', url_name='song-history')
+    def get_song_history(self, request, pk=None):
+        song = self.get_object()
+        actions = Action.objects.filter(song=song, user=request.user)
+        serializer = ActionSerializer(actions, many=True)
+        return Response(serializer.data)
+
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
+        return super().get_permissions()
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        if serializer.instance.user != self.request.user:
+            raise PermissionDenied('You do not have permission to edit this song')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            raise PermissionDenied('You do not have permission to delete this song')
+        instance.delete()
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()

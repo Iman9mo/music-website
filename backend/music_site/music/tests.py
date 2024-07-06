@@ -2,7 +2,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
-from .models import Category, Artist, Song, Comment
+from .models import Category, Artist, Song, Comment, Action
 from django.contrib.auth.models import User
 
 class MusicAppTests(APITestCase):
@@ -371,3 +371,85 @@ class MusicAppTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['total_likes'], 30)
         self.assertEqual(response.data['total_views'], 300)
+        
+        
+    def test_get_song_profile(self):
+        song = Song.objects.create(
+            title='Test Song',
+            artist=self.artist,
+            category=self.category,
+            user=self.user,
+            likes=10,
+            views=100,
+            approved=True,
+            file=SimpleUploadedFile("file.mp3", b"file_content", content_type="audio/mpeg")
+        )
+        url = reverse('song-profile', kwargs={'pk': song.id})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], 'Test Song')
+
+    def test_get_song_history(self):
+        song = Song.objects.create(
+            title='Test Song',
+            artist=self.artist,
+            category=self.category,
+            user=self.user,
+            likes=10,
+            views=100,
+            approved=True,
+            file=SimpleUploadedFile("file.mp3", b"file_content", content_type="audio/mpeg")
+        )
+        Action.objects.create(user=self.user, song=song, action_type='like')
+        Action.objects.create(user=self.user, song=song, action_type='view')
+        url = reverse('song-history', kwargs={'pk': song.id})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_crud_operations_on_song_by_uploader(self):
+        song = Song.objects.create(
+            title='Test Song',
+            artist=self.artist,
+            category=self.category,
+            user=self.user,
+            likes=10,
+            views=100,
+            approved=True,
+            file=SimpleUploadedFile("file.mp3", b"file_content", content_type="audio/mpeg")
+        )
+
+        # Update song
+        url = reverse('song-detail', kwargs={'pk': song.id})
+        data = {'title': 'Updated Song'}
+        response = self.client.patch(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['title'], 'Updated Song')
+
+        # Delete song
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Song.objects.filter(id=song.id).exists())
+
+    def test_crud_operations_on_category_by_admin(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.admin_token)
+
+        # Create category
+        url = reverse('category-list')
+        data = {'name': 'New Category'}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], 'New Category')
+        category_id = response.data['id']
+
+        # Update category
+        url = reverse('category-detail', kwargs={'pk': category_id})
+        data = {'name': 'Updated Category'}
+        response = self.client.patch(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'Updated Category')
+
+        # Delete category
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Category.objects.filter(id=category_id).exists())

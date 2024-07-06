@@ -21,4 +21,8 @@ urlpatterns = [
     path('songs/artist/<int:artist_id>/', SongViewSet.as_view({'get': 'get_songs_by_artist'}), name='artist-songs'),
     path('songs/user/<int:user_id>/', SongViewSet.as_view({'get': 'get_songs_by_user'}), name='user-songs'),
     path('users/profile/likes-views/', UserViewSet.as_view({'get': 'profile_likes_views'}), name='profile-likes-views'),
+    
+    
+    path('songs/<int:pk>/profile/', SongViewSet.as_view({'get': 'get_song_profile'}), name='song-profile'),
+    path('songs/<int:pk>/history/', SongViewSet.as_view({'get': 'get_song_history'}), name='song-history'),
 ]
