@@ -21,12 +21,14 @@ class MusicAppTests(APITestCase):
         url = reverse('login')
         data = {'username': username, 'password': password}
         response = self.client.post(url, data, format='json')
+        # print(response.data['auth_token'])
         return response.data['auth_token']
 
     def test_user_registration(self):
         url = reverse('register')
         data = {'username': 'newuser', 'email': 'newuser@example.com', 'password': 'password123', 'first_name': 'New', 'last_name': 'User'}
         response = self.client.post(url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_user_login(self):
@@ -36,18 +38,21 @@ class MusicAppTests(APITestCase):
     def test_get_logged_in_user_profile(self):
         url = reverse('user-profile')
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], 'testuser')
 
     def test_get_other_user_profile(self):
         url = reverse('user-profile')
         response = self.client.get(url, {'id': self.admin_user.id}, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], 'admin')
 
     def test_search_users(self):
         url = reverse('user-list')
         response = self.client.get(url, {'search': 'testuser'}, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['username'], 'testuser')
@@ -63,6 +68,7 @@ class MusicAppTests(APITestCase):
             'file': song_file
         }
         response = self.client.post(url, data, format='multipart')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_retrieve_song(self):
@@ -76,6 +82,7 @@ class MusicAppTests(APITestCase):
         )
         url = reverse('song-detail', kwargs={'pk': song.id})
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], song.title)
 
@@ -91,6 +98,7 @@ class MusicAppTests(APITestCase):
         url = reverse('song-detail', kwargs={'pk': song.id})
         data = {'title': 'Updated Song'}
         response = self.client.patch(url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], 'Updated Song')
 
@@ -105,6 +113,7 @@ class MusicAppTests(APITestCase):
         )
         url = reverse('song-detail', kwargs={'pk': song.id})
         response = self.client.delete(url)
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_create_comment(self):
@@ -119,6 +128,7 @@ class MusicAppTests(APITestCase):
         url = reverse('comment-list')
         data = {'content': 'Great song!', 'song': song.id, 'user': self.user.id}
         response = self.client.post(url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_retrieve_comment(self):
@@ -133,41 +143,10 @@ class MusicAppTests(APITestCase):
         comment = Comment.objects.create(content='Great song!', song=song, user=self.user, approved=True)
         url = reverse('comment-detail', kwargs={'pk': comment.id})
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['content'], 'Great song!')
 
-    # def test_admin_approve_song(self):
-    #     self.client.login(username='admin', password='password123')
-    #     song = Song.objects.create(
-    #         title='Test Song',
-    #         artist=self.artist,
-    #         category=self.category,
-    #         user=self.user,
-    #         approved=False,
-    #         file=SimpleUploadedFile("file.mp3", b"file_content", content_type="audio/mpeg")
-    #     )
-    #     url = reverse('song-detail', kwargs={'pk': song.id})
-    #     data = {'approved': True}
-    #     response = self.client.patch(url, data, format='json')
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertTrue(response.data['approved'])
-
-    # def test_admin_approve_comment(self):
-    #     self.client.login(username='admin', password='password123')
-    #     song = Song.objects.create(
-    #         title='Test Song',
-    #         artist=self.artist,
-    #         category=self.category,
-    #         user=self.user,
-    #         approved=True,
-    #         file=SimpleUploadedFile("file.mp3", b"file_content", content_type="audio/mpeg")
-    #     )
-    #     comment = Comment.objects.create(content='Great song!', song=song, user=self.user, approved=False)
-    #     url = reverse('comment-detail', kwargs={'pk': comment.id})
-    #     data = {'approved': True}
-    #     response = self.client.patch(url, data, format='json')
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertTrue(response.data['approved'])
 
     def test_admin_block_song(self):
         self.client.login(username='admin', password='password123')
@@ -182,6 +161,7 @@ class MusicAppTests(APITestCase):
         url = reverse('song-detail', kwargs={'pk': song.id})
         data = {'approved': False}
         response = self.client.patch(url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data['approved'])
 
@@ -190,6 +170,7 @@ class MusicAppTests(APITestCase):
         user_url = reverse('user-detail', kwargs={'pk': self.user.id})
         data = {'user_permissions': []}
         response = self.client.patch(user_url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertFalse(self.user.user_permissions.exists())
@@ -214,6 +195,7 @@ class MusicAppTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.admin_token)
         url = reverse('song-unapproved')
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -231,6 +213,7 @@ class MusicAppTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.admin_token)
         url = reverse('comment-unapproved')
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         
@@ -265,6 +248,7 @@ class MusicAppTests(APITestCase):
 
         url = reverse('hottest-songs')
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
         self.assertEqual(response.data[0]['title'], 'Song 2')  # Song 2 has the most likes
@@ -293,6 +277,7 @@ class MusicAppTests(APITestCase):
         )
         url = reverse('category-songs', kwargs={'category_id': self.category.id})
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -317,6 +302,7 @@ class MusicAppTests(APITestCase):
         )
         url = reverse('artist-songs', kwargs={'artist_id': self.artist.id})
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -341,6 +327,7 @@ class MusicAppTests(APITestCase):
         )
         url = reverse('user-songs', kwargs={'user_id': self.user.id})
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -368,6 +355,7 @@ class MusicAppTests(APITestCase):
         url = reverse('profile-likes-views')
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token)
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['total_likes'], 30)
         self.assertEqual(response.data['total_views'], 300)
@@ -386,6 +374,7 @@ class MusicAppTests(APITestCase):
         )
         url = reverse('song-profile', kwargs={'pk': song.id})
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], 'Test Song')
 
@@ -404,6 +393,7 @@ class MusicAppTests(APITestCase):
         Action.objects.create(user=self.user, song=song, action_type='view')
         url = reverse('song-history', kwargs={'pk': song.id})
         response = self.client.get(url, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
@@ -423,11 +413,13 @@ class MusicAppTests(APITestCase):
         url = reverse('song-detail', kwargs={'pk': song.id})
         data = {'title': 'Updated Song'}
         response = self.client.patch(url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['title'], 'Updated Song')
 
         # Delete song
         response = self.client.delete(url)
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Song.objects.filter(id=song.id).exists())
 
@@ -438,6 +430,7 @@ class MusicAppTests(APITestCase):
         url = reverse('category-list')
         data = {'name': 'New Category'}
         response = self.client.post(url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], 'New Category')
         category_id = response.data['id']
@@ -446,10 +439,54 @@ class MusicAppTests(APITestCase):
         url = reverse('category-detail', kwargs={'pk': category_id})
         data = {'name': 'Updated Category'}
         response = self.client.patch(url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], 'Updated Category')
 
         # Delete category
         response = self.client.delete(url)
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Category.objects.filter(id=category_id).exists())
+        
+        
+        
+    def test_admin_approve_song(self):
+        self.client.login(username='admin', password='password123')
+        song = Song.objects.create(
+        title='Test Song',
+        artist=self.artist,
+        category=self.category,
+        user=self.user,
+        approved=False,
+        file=SimpleUploadedFile("file.mp3", b"file_content",
+        content_type="audio/mpeg")
+        )
+        url = reverse('song-detail', kwargs={'pk': song.id})
+        data = {'approved': True}
+        response = self.client.patch(url, data, format='json')
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['approved'])
+
+
+
+    def test_admin_approve_comment(self):
+        self.client.login(username='admin', password='password123')
+        song = Song.objects.create(
+        title='Test Song',
+        artist=self.artist,
+        category=self.category,
+        user=self.user,
+        approved=True,
+        file=SimpleUploadedFile("file.mp3", b"file_content",
+        content_type="audio/mpeg")
+        )
+        comment = Comment.objects.create(content='Great song!', song=song,
+        user=self.user, approved=False)
+        url = reverse('comment-detail', kwargs={'pk': comment.id})
+        data = {'approved': True}
+        response = self.client.patch(url, data, format='json')
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['approved'])
