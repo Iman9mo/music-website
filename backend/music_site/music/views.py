@@ -10,6 +10,7 @@ from rest_framework.decorators import action
 from django.db.models import Sum
 from .permissions import IsOwnerOrReadOnly
 from django.core.exceptions import PermissionDenied
+from django.utils.dateparse import parse_date
 
 
 
@@ -64,6 +65,27 @@ class SongViewSet(viewsets.ModelViewSet):
     def get_songs_by_user(self, request, user_id=None):
         songs = Song.objects.filter(user_id=user_id, approved=True)
         serializer = self.get_serializer(songs, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='by-period', url_name='songs-by-period')
+    def get_songs_by_period(self, request):
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if not start_date or not end_date:
+            return Response({"error": "Please provide both start_date and end_date in the format YYYY-MM-DD."}, status=400)
+
+        try:
+            start_date = parse_date(start_date)
+            end_date = parse_date(end_date)
+        except ValueError:
+            return Response({"error": "Invalid date format. Please use YYYY-MM-DD."}, status=400)
+
+        if start_date > end_date:
+            return Response({"error": "start_date must be before end_date."}, status=400)
+
+        songs = Song.objects.filter(created_at__range=(start_date, end_date))
+        serializer = SongSerializer(songs, many=True)
         return Response(serializer.data)
 
     def perform_create(self, serializer):

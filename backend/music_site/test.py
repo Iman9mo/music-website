@@ -136,3 +136,20 @@ if response.status_code == 201:
     print(response.json())
 else:
     print(f"Failed to create comment: {response.status_code}")
+
+
+
+
+url = "http://127.0.0.1:8000/api/songs/by-period/"
+
+params = {
+    "start_date": "2023-01-01",
+    "end_date": "2024-12-31"
+}
+
+response = requests.get(url, headers=headers, params=params)
+
+if response.status_code == 200:
+    print(response.json())
+else:
+    print(f"Failed to retrieve songs by period: {response.status_code}")
